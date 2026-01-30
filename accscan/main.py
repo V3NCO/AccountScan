@@ -1,22 +1,18 @@
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Annotated
-import asyncio
-import jwt
+from piccolo.columns import UUID
 from accscan.config import settings
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jwt.exceptions import InvalidTokenError
-from pwdlib import PasswordHash
 from pydantic import BaseModel
-from accscan.tables import Users
+from accscan.tables import EmailAddresses
+from jwt.exceptions import InvalidTokenError
+from accscan.auth import *
+import uuid
 
-# to get a string like this run:
-# openssl rand -hex 32
 SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-
 
 class Token(BaseModel):
     access_token: str
@@ -29,7 +25,6 @@ class TokenData(BaseModel):
 
 class User(BaseModel):
     username: str
-    email: str | None = None
     public_key: str | None = None
     disabled: bool | None = None
 
@@ -37,49 +32,19 @@ class User(BaseModel):
 class UserInDB(User):
     hashed_password: str
 
-
-password_hash = PasswordHash.recommended()
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
 
-
-def verify_password(plain_password, hashed_password):
-    return password_hash.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password):
-    return password_hash.hash(password)
-
-
-async def get_user(username: str):
-    is_in_db = await Users.exists().where(Users.username == username)
-    if is_in_db:
-        user_dict = await Users.select().where(Users.username == username)
-        return UserInDB(**user_dict[0])
-
-
-async def authenticate_user(username: str, password: str):
-    user = await get_user(username)
-    if not user:
-        return False
-    verified = await asyncio.to_thread(verify_password, password, user.hashed_password)
-    if not verified:
-        return False
-    return user
-
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
+async def get_uuid(table, id: UUID):
+    uuidfound = False
+    while not uuidfound:
+        currentuuid = uuid.uuid4()
+        if await table.exists().where(id == currentuuid):
+            uuidfound = False
+        else:
+            uuidfound = True
+            return currentuuid
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     credentials_exception = HTTPException(
@@ -100,14 +65,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         raise credentials_exception
     return user
 
-
 async def get_current_active_user(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
-
 
 @app.post("/token")
 async def login_for_access_token(
@@ -133,9 +96,13 @@ async def read_users_me(
 ):
     return current_user
 
-
-@app.get("/users/me/items/")
-async def read_own_items(
+@app.post("/email/add")
+async def add_user_email(
     current_user: Annotated[User, Depends(get_current_active_user)],
+    address: str
 ):
-    return [{"item_id": "Foo", "owner": current_user.username}]
+    await EmailAddresses.insert(EmailAddresses(
+        id=await get_uuid(EmailAddresses, EmailAddresses.id),
+        user=current_user.username,
+        address=address
+    ))
