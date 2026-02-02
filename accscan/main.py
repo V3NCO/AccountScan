@@ -8,6 +8,7 @@ from jwt.exceptions import InvalidTokenError
 import jwt
 from accscan.auth import authenticate_user, create_access_token, get_user
 import accscan.email
+import accscan.auth
 SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -83,6 +84,12 @@ async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     return current_user
+
+@app.post("/users/create")
+async def create_user(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+):
+    return await accscan.auth.create_user(form_data)
 
 @app.post("/email/add")
 async def add_user_email(

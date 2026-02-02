@@ -6,6 +6,8 @@ from pwdlib import PasswordHash
 from accscan.config import settings
 from pydantic import BaseModel
 
+from accscan.utils import get_uuid
+
 password_hash = PasswordHash.recommended()
 
 SECRET_KEY = settings.secret_key
@@ -64,3 +66,13 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+async def create_user(form_data):
+    pwd = password_hash.hash(form_data.password)
+    uuid = await get_uuid(Users, Users.id)
+    await Users.insert(Users(
+        id=uuid,
+        username=form_data.username,
+        hashed_password=pwd
+    ))
+    return {"ok": True}
