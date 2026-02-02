@@ -1,15 +1,13 @@
 from datetime import timedelta
 from typing import Annotated
-from piccolo.columns import UUID
 from accscan.config import settings
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from accscan.tables import EmailAddresses
 from jwt.exceptions import InvalidTokenError
-from accscan.auth import *
-import uuid
-
+import jwt
+from accscan.auth import authenticate_user, create_access_token, get_user
+import accscan.email
 SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -35,16 +33,6 @@ class UserInDB(User):
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
-
-async def get_uuid(table, id: UUID):
-    uuidfound = False
-    while not uuidfound:
-        currentuuid = uuid.uuid4()
-        if await table.exists().where(id == currentuuid):
-            uuidfound = False
-        else:
-            uuidfound = True
-            return currentuuid
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     credentials_exception = HTTPException(
@@ -99,10 +87,9 @@ async def read_users_me(
 @app.post("/email/add")
 async def add_user_email(
     current_user: Annotated[User, Depends(get_current_active_user)],
-    address: str
+    hostname: str,
+    username: str,
+    password: str,
+    secure: bool
 ):
-    await EmailAddresses.insert(EmailAddresses(
-        id=await get_uuid(EmailAddresses, EmailAddresses.id),
-        user=current_user.username,
-        address=address
-    ))
+    return await accscan.email.add_user_email(current_user, hostname, username, password, secure)

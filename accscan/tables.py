@@ -9,7 +9,10 @@ class Users(Table):
     hashed_password = Varchar(length=512)
     disabled = Boolean
 
-class EmailAddresses(Table):
+class EmailAccounts(Table):
     id = UUID(primary_key=True)
     user = Varchar(length=100)
-    address = Varchar(length=200)
+    hostname = Varchar(length=200)
+    username = Varchar(length=200)
+    password = Varchar(length=200)
+    secure = Boolean()
