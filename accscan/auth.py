@@ -68,11 +68,17 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 async def create_user(form_data):
-    pwd = password_hash.hash(form_data.password)
-    uuid = await get_uuid(Users, Users.id)
-    await Users.insert(Users(
-        id=uuid,
-        username=form_data.username,
-        hashed_password=pwd
-    ))
-    return {"ok": True}
+    if Users.exists().where(Users.username == form_data.username):
+        return {"ok": False, "error": "This username is taken!"}
+    else:
+        try:
+            pwd = password_hash.hash(form_data.password)
+            uuid = await get_uuid(Users, Users.id)
+            await Users.insert(Users(
+                id=uuid,
+                username=form_data.username,
+                hashed_password=pwd
+            ))
+            return {"ok": True}
+        except Exception as error:
+            return {"ok": False, "error": error}
