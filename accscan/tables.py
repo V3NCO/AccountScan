@@ -1,5 +1,6 @@
+from piccolo.columns.defaults.timestamp import TimestampNow
 from piccolo.table import Table
-from piccolo.columns import UUID, Varchar, Boolean
+from piccolo.columns import UUID, Varchar, Boolean, Text, Timestamp
 
 
 class Users(Table):
@@ -16,3 +17,13 @@ class EmailAccounts(Table):
     username = Varchar(length=200)
     password = Varchar(length=200)
     secure = Boolean()
+
+class Emails(Table):
+    account = UUID()
+    email_from = Text()
+    email_to = Text()
+    delivered_to = Text()
+    subject = Text()
+    reply_to = Text()
+    body = Text()
+    added_at = Timestamp(TimestampNow())

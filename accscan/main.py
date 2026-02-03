@@ -100,3 +100,9 @@ async def add_user_email(
     secure: bool
 ):
     return await accscan.email.add_user_email(current_user, hostname, username, password, secure)
+
+@app.get("/email/pull")
+async def fastapi_email_pull(
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return await accscan.email.pull_emails(current_user)
