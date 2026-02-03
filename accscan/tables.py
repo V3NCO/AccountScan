@@ -19,11 +19,11 @@ class EmailAccounts(Table):
     secure = Boolean()
 
 class Emails(Table):
-    account = UUID()
-    email_from = Text()
-    email_to = Text()
-    delivered_to = Text()
-    subject = Text()
-    reply_to = Text()
-    body = Text()
+    account = UUID(null=False)
+    email_from = Text(null=False)
+    email_to = Text(null=False)
+    delivered_to = Text(null=True)
+    subject = Text(null=False)
+    reply_to = Text(null=True)
+    body = Text(null=False)
     added_at = Timestamp(TimestampNow())

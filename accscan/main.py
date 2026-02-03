@@ -105,4 +105,5 @@ async def add_user_email(
 async def fastapi_email_pull(
     current_user: Annotated[User, Depends(get_current_active_user)]
 ):
-    return await accscan.email.pull_emails(current_user)
+    await accscan.email.pull_emails(current_user)
+    return {'ok': True}
