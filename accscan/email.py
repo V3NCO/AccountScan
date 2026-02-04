@@ -1,4 +1,4 @@
-from accscan.tables import EmailAccounts, Emails, Users
+from accscan.tables import EmailAccounts, Emails
 from accscan.utils import get_uuid
 import imaplib
 import email
