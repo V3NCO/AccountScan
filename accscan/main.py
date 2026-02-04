@@ -97,6 +97,16 @@ async def create_user(
     """
     return await accscan.auth.create_user(form_data)
 
+@app.delete("/users/delete")
+async def fastapi_delete_user(
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    """
+    Deletes an account
+    """
+    return await accscan.auth.delete_user(current_user)
+
+
 @app.post("/email/account/add")
 async def add_user_email(
     current_user: Annotated[User, Depends(get_current_active_user)],

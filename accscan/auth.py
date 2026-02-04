@@ -1,9 +1,10 @@
 import asyncio
 import jwt
-from accscan.tables import Users
+from accscan.tables import EmailAccounts, Users
 from datetime import datetime, timedelta, timezone
 from pwdlib import PasswordHash
 from accscan.config import settings
+from accscan.email import delete_email
 from pydantic import BaseModel
 
 from accscan.utils import get_uuid
@@ -82,3 +83,10 @@ async def create_user(form_data):
             return {"ok": True}
         except Exception as error:
             return {"ok": False, "error": error}
+
+async def delete_user(current_user):
+    accounts = await EmailAccounts.select().where(EmailAccounts.user == current_user.username)
+    for acc in accounts:
+        await delete_email(current_user, str(acc['id']), True)
+    await Users.delete().where(Users.username == current_user.username)
+    return {"ok": True}
