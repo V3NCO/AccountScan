@@ -83,12 +83,18 @@ async def login_for_access_token(
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
+    """
+    Shows the most basic info we have on you
+    """
     return current_user
 
 @app.post("/users/create")
 async def create_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ):
+    """
+    Creates an account
+    """
     return await accscan.auth.create_user(form_data)
 
 @app.post("/email/account/add")
@@ -99,12 +105,18 @@ async def add_user_email(
     password: str,
     secure: bool
 ):
+    """
+    Adds an IMAP account in the database, has to be valid/accessible to this server
+    """
     return await accscan.email.add_user_email(current_user, hostname, username, password, secure)
 
 @app.get("/email/account/list")
 async def fastapi_account_list(
   current_user: Annotated[User, Depends(get_current_active_user)]
 ):
+    """
+    Lists all the IMAP accounts you have stored in the database
+    """
     return await accscan.email.list_user_email(current_user)
 
 @app.delete("/email/account/delete")
@@ -121,6 +133,9 @@ async def fastapi_account_delete(
 async def fastapi_email_pull(
     current_user: Annotated[User, Depends(get_current_active_user)]
 ):
+    """
+    Connects to the imap server and starts downloading and storing every email in the inbox
+    """
     await accscan.email.pull_emails(current_user)
     return {'ok': True}
 
@@ -139,4 +154,7 @@ async def fastapi_email_progpull(
     current_user: Annotated[User, Depends(get_current_active_user)],
     account: str
 ):
+    """
+    Shows the how many emails are in the database compared to emails in your inbox, useful to see the pulling progress
+    """
     return await accscan.email.check_progress(current_user, account)
