@@ -3,6 +3,7 @@ from accscan.utils import get_uuid
 import imaplib
 import email
 from email import policy
+import uuid
 
 async def add_user_email(
     current_user,
@@ -76,3 +77,32 @@ async def pull_emails(
                                 body = body_text
                             )
                         )
+
+async def validate_uuid(test, version=4):
+    try:
+       uuid.UUID(test, version=version)
+    except ValueError:
+        return False
+    return True
+
+
+async def check_progress(
+    current_user,
+    account
+):
+    if await validate_uuid(account):
+        dbline = await EmailAccounts.select().where(EmailAccounts.id == account)
+        creds = dbline[0]
+        if creds["user"] == current_user.username:
+            if creds['secure']:
+                conn = imaplib.IMAP4_SSL(creds['hostname'])
+            else:
+                conn = imaplib.IMAP4(creds['hostname'])
+            conn.login(creds['username'], creds['password'])
+            status, messages = conn.select(readonly=True)
+            dbcount = await Emails.count().where(Emails.account == account)
+            return {"ok": True,"indb": dbcount, "inbox":int(messages[0].decode())-1} #type:ignore
+        else:
+            return {"ok": False, "error": "This address is not assigned to your account!"}
+    else:
+        return {"ok": False, "error": "Not a valid UUID!"}

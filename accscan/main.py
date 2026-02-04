@@ -107,3 +107,10 @@ async def fastapi_email_pull(
 ):
     await accscan.email.pull_emails(current_user)
     return {'ok': True}
+
+@app.get("/email/progress/pull")
+async def fastapi_email_progpull(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    account: str
+):
+    return await accscan.email.check_progress(current_user, account)
