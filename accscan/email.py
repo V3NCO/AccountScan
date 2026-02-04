@@ -51,6 +51,7 @@ async def pull_emails(
         if status != "OK":
             return {"ok": False, "error": "Incorrect mail box"}
         else:
+            await Emails.delete().where(Emails.account == account["id"])
             for i in range(1, int(messages[0])): #type:ignore i have no idea how to fix th
                 res, messages = conn.fetch(str(i), '(RFC822)')
                 for response in messages:

@@ -20,10 +20,10 @@ class EmailAccounts(Table):
 
 class Emails(Table):
     account = UUID(null=False)
-    email_from = Text(null=False)
-    email_to = Text(null=False)
+    email_from = Text(null=True)
+    email_to = Text(null=True)
     delivered_to = Text(null=True)
-    subject = Text(null=False)
+    subject = Text(null=True)
     reply_to = Text(null=True)
-    body = Text(null=False)
+    body = Text(null=True)
     added_at = Timestamp(TimestampNow())
