@@ -107,12 +107,32 @@ async def fastapi_account_list(
 ):
     return await accscan.email.list_user_email(current_user)
 
-@app.get("/email/pull")
+@app.delete("/email/account/delete")
+async def fastapi_account_delete(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    account_id
+):
+    """
+    Deletes all the emails pulled for the specified email account and deletes the email account credentials from the database
+    """
+    return await accscan.email.delete_email(current_user, account_id, True)
+
+@app.get("/email/inbox/pull")
 async def fastapi_email_pull(
     current_user: Annotated[User, Depends(get_current_active_user)]
 ):
     await accscan.email.pull_emails(current_user)
     return {'ok': True}
+
+@app.delete("/email/inbox/delete")
+async def fastapi_email_delete(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    account_id
+):
+    """
+    Deletes all the emails pulled for the specified email account
+    """
+    return await accscan.email.delete_email(current_user, account_id, False)
 
 @app.get("/email/progress/pull")
 async def fastapi_email_progpull(

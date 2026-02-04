@@ -115,3 +115,21 @@ async def list_user_email(
 ):
     dblines = await EmailAccounts.select(EmailAccounts.id, EmailAccounts.username, EmailAccounts.hostname, EmailAccounts.secure).where(EmailAccounts.user == current_user.username)
     return dblines
+
+async def delete_email(
+    current_user,
+    account_id,
+    rm_user: bool = False
+):
+    if await validate_uuid(account_id):
+        dbline = await EmailAccounts.select().where(EmailAccounts.id == account_id)
+        creds = dbline[0]
+        if creds["user"] == current_user.username:
+            await Emails.delete().where(Emails.account == account_id)
+            if rm_user:
+                await EmailAccounts.delete().where(EmailAccounts.id == account_id)
+            return {"ok": True}
+        else:
+            return {"ok": False, "error": "This address is not assigned to your account!"}
+    else:
+        return {"ok": False, "error": "Not a valid UUID!"}
