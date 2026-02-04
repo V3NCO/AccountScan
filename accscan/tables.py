@@ -11,12 +11,12 @@ class Users(Table):
     disabled = Boolean
 
 class EmailAccounts(Table):
-    id = UUID(primary_key=True)
-    user = Varchar(length=100)
-    hostname = Varchar(length=200)
-    username = Varchar(length=200)
-    password = Varchar(length=200)
-    secure = Boolean()
+    id = UUID(primary_key=True, null=False)
+    user = Varchar(length=100, null=False)
+    hostname = Varchar(length=200, null=False)
+    username = Varchar(length=200, null=False)
+    password = Varchar(length=200, null=False)
+    secure = Boolean(null=False)
 
 class Emails(Table):
     account = UUID(null=False)

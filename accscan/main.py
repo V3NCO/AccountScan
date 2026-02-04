@@ -91,7 +91,7 @@ async def create_user(
 ):
     return await accscan.auth.create_user(form_data)
 
-@app.post("/email/add")
+@app.post("/email/account/add")
 async def add_user_email(
     current_user: Annotated[User, Depends(get_current_active_user)],
     hostname: str,
@@ -100,6 +100,12 @@ async def add_user_email(
     secure: bool
 ):
     return await accscan.email.add_user_email(current_user, hostname, username, password, secure)
+
+@app.get("/email/account/list")
+async def fastapi_account_list(
+  current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return await accscan.email.list_user_email(current_user)
 
 @app.get("/email/pull")
 async def fastapi_email_pull(

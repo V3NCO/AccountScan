@@ -12,27 +12,29 @@ async def add_user_email(
     password,
     secure
 ):
-    try:
-        if secure:
-            conn = imaplib.IMAP4_SSL(hostname)
-        else:
-            conn = imaplib.IMAP4(hostname)
-        conn.login(username, password)
-        conn.select(readonly=True)
+    if current_user & hostname & username & password & secure:
+        try:
+            if secure:
+                conn = imaplib.IMAP4_SSL(hostname)
+            else:
+                conn = imaplib.IMAP4(hostname)
+                conn.login(username, password)
+                conn.select(readonly=True)
 
 
-        await EmailAccounts.insert(EmailAccounts(
-            id=await get_uuid(EmailAccounts, EmailAccounts.id),
-            user=current_user.username,
-            hostname=hostname,
-            username=username,
-            password=password,
-            secure=secure
-        ))
-        return {"ok": True}
-    except Exception as e:
-        return {"ok": False, "error": f"Error: {e}"}
-
+            await EmailAccounts.insert(EmailAccounts(
+                id=await get_uuid(EmailAccounts, EmailAccounts.id),
+                user=current_user.username,
+                hostname=hostname,
+                username=username,
+                password=password,
+                secure=secure
+            ))
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": f"Error: {e}"}
+    else:
+        return {"ok": False, "error": "All the fields need to be filled!"}
 async def pull_emails(
     current_user
 ):
@@ -106,3 +108,10 @@ async def check_progress(
             return {"ok": False, "error": "This address is not assigned to your account!"}
     else:
         return {"ok": False, "error": "Not a valid UUID!"}
+
+
+async def list_user_email(
+    current_user
+):
+    dblines = await EmailAccounts.select(EmailAccounts.id, EmailAccounts.username, EmailAccounts.hostname, EmailAccounts.secure).where(EmailAccounts.user == current_user.username)
+    return dblines
