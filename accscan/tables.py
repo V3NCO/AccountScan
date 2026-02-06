@@ -20,10 +20,5 @@ class EmailAccounts(Table):
 
 class Emails(Table):
     account = UUID(null=False)
-    email_from = Text(null=True)
-    email_to = Text(null=True)
-    delivered_to = Text(null=True)
-    subject = Text(null=True)
-    reply_to = Text(null=True)
-    body = Text(null=True)
+    raw_message_base64 = Text(null=True)
     added_at = Timestamp(TimestampNow())

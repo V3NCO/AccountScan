@@ -1,9 +1,12 @@
+from hashlib import sha256
+from pydantic.networks import EmailStr
 from accscan.tables import EmailAccounts, Emails
 from accscan.utils import get_uuid
 import imaplib
 import email
 from email import policy
 import uuid
+import base64
 
 async def add_user_email(
     current_user,
@@ -18,8 +21,8 @@ async def add_user_email(
                 conn = imaplib.IMAP4_SSL(hostname)
             else:
                 conn = imaplib.IMAP4(hostname)
-                conn.login(username, password)
-                conn.select(readonly=True)
+            conn.login(username, password)
+            conn.select(readonly=True)
 
 
             await EmailAccounts.insert(EmailAccounts(
@@ -59,26 +62,33 @@ async def pull_emails(
                 res, messages = conn.fetch(str(i), '(RFC822)')
                 for response in messages:
                     if isinstance(response, tuple):
-                        msg = email.message_from_bytes(response[1], policy=policy.default)
-                        if msg.is_multipart():
-                            part = msg.get_body(preferencelist=('plain', 'html'))
-                            if part:
-                                body_text = part.get_content()
-                            else:
-                                body_text = ''.join(p.get_content() for p in msg.iter_parts() if p.get_content_type().startswith('text/'))
-                        else:
-                            body_text = msg.get_content()
+                        raw_bytes = response[1]
+                        if raw_bytes is None:
+                            continue
+                        b64_bytes = base64.b64encode(raw_bytes)
+                        b64_str = b64_bytes.decode('ascii')
                         await Emails.insert(
                             Emails(
-                                account = account['id'],
-                                email_from = msg["From"],
-                                email_to = msg["To"],
-                                delivered_to = msg["Delivered-To"],
-                                subject = msg["Subject"],
-                                reply_to = msg["Reply-To"],
-                                body = body_text
+                                account = account["id"],
+                                raw_message_base64 = b64_str,
                             )
                         )
+
+async def get_email_body(message):
+    msg = email.message_from_bytes(message, policy=policy.default)
+    if msg.is_multipart():
+        part = msg.get_body(preferencelist=('plain', 'html'))
+        if part:
+            body_text = part.get_content()
+        else:
+            body_text = ''.join(p.get_content() for p in msg.iter_parts() if p.get_content_type().startswith('text/'))
+    else:
+        body_text = msg.get_content()
+    return body_text
+
+async def get_email_header(message, header: str):
+    msg = email.message_from_bytes(message, policy=policy.default)
+    return msg[header]
 
 async def validate_uuid(test, version=4):
     try:
