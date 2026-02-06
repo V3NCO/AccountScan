@@ -38,7 +38,8 @@ async def add_user_email(
             return {"ok": False, "error": f"Error: {e}"}
     else:
         return {"ok": False, "error": "All the fields need to be filled!"}
-async def pull_emails(
+
+async def pull_all_emails(
     current_user
 ):
     # This deletes all emails for that account and then starts pulling
@@ -47,6 +48,40 @@ async def pull_emails(
     # to know exactly which mail it already has or not
     accounts = await EmailAccounts.select().where(EmailAccounts.user == current_user.username)
     for account in accounts:
+        if account['secure']:
+            conn = imaplib.IMAP4_SSL(account['hostname'])
+        else:
+            conn = imaplib.IMAP4(account['hostname'])
+        conn.login(account['username'], account['password'])
+        status, messages = conn.select(readonly=True)
+
+        if status != "OK":
+            return {"ok": False, "error": "Incorrect mail box"}
+        else:
+            await Emails.delete().where(Emails.account == account["id"])
+            for i in range(1, int(messages[0])): #type:ignore i have no idea how to fix th
+                res, messages = conn.fetch(str(i), '(RFC822)')
+                for response in messages:
+                    if isinstance(response, tuple):
+                        raw_bytes = response[1]
+                        if raw_bytes is None:
+                            continue
+                        b64_bytes = base64.b64encode(raw_bytes)
+                        b64_str = b64_bytes.decode('ascii')
+                        await Emails.insert(
+                            Emails(
+                                account = account["id"],
+                                raw_message_base64 = b64_str,
+                            )
+                        )
+
+async def pull_emails(
+    current_user,
+    account_id
+):
+    if await validate_uuid(account_id):
+        account_db = await EmailAccounts.select().where(EmailAccounts.id == account_id)
+        account = account_db[0]
         if account['secure']:
             conn = imaplib.IMAP4_SSL(account['hostname'])
         else:

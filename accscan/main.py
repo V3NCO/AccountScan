@@ -139,14 +139,25 @@ async def fastapi_account_delete(
     """
     return await accscan.email.delete_email(current_user, account_id, True)
 
-@app.get("/email/inbox/pull")
-async def fastapi_email_pull(
+@app.get("/email/inbox/pull/all")
+async def fastapi_email_pull_all(
     current_user: Annotated[User, Depends(get_current_active_user)]
 ):
     """
     Connects to the imap server and starts downloading and storing every email in the inbox
     """
-    await accscan.email.pull_emails(current_user)
+    await accscan.email.pull_all_emails(current_user)
+    return {'ok': True}
+
+@app.get("/email/inbox/pull")
+async def fastapi_email_pull(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    account_id: str
+):
+    """
+    Connects to the imap server and starts downloading and storing every email in the inbox
+    """
+    await accscan.email.pull_emails(current_user, account_id)
     return {'ok': True}
 
 @app.delete("/email/inbox/delete")
