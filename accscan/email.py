@@ -74,8 +74,17 @@ async def pull_emails(
                             )
                         )
 
-async def get_email_body(message):
-    msg = email.message_from_bytes(message, policy=policy.default)
+async def decode_dbmail(raw_b64: str):
+    if isinstance(raw_b64, str):
+        b64_bytes = raw_b64.encode('ascii')
+    else:
+        b64_bytes = raw_b64
+
+    raw_bytes = base64.b64decode(b64_bytes)
+    msg = email.message_from_bytes(raw_bytes, policy=policy.default)
+    return msg
+
+async def get_email_body(msg):
     if msg.is_multipart():
         part = msg.get_body(preferencelist=('plain', 'html'))
         if part:
@@ -86,9 +95,6 @@ async def get_email_body(message):
         body_text = msg.get_content()
     return body_text
 
-async def get_email_header(message, header: str):
-    msg = email.message_from_bytes(message, policy=policy.default)
-    return msg[header]
 
 async def validate_uuid(test, version=4):
     try:
