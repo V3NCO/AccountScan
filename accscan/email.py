@@ -1,5 +1,3 @@
-from hashlib import sha256
-from pydantic.networks import EmailStr
 from accscan.tables import EmailAccounts, Emails
 from accscan.utils import get_uuid
 import imaplib
